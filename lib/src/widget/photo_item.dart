@@ -27,6 +27,11 @@ class PhotoItem extends StatelessWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: 200,
+              placeholder: (context, url) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+
+              errorWidget: (context, url, error) => const Icon(Icons.error),
             ),
             Padding(
               padding: const EdgeInsets.all(2.0),
