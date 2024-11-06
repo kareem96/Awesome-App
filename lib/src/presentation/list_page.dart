@@ -26,7 +26,7 @@ class _ListPageState extends State<ListPage> {
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels ==
-              _scrollController.position.maxScrollExtent &&
+          _scrollController.position.maxScrollExtent &&
           !(context.read<PhotoBloc>().isLoadingMore)) {
         page++;
         context.read<PhotoBloc>().add(LoadPhotos(page: page));
@@ -91,66 +91,87 @@ class _ListPageState extends State<ListPage> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: _onWillPop, // Intercept back button
+      onWillPop: _onWillPop,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Awesome App'),
-          actions: [
-            IconButton(
-              icon: Icon(isGridView ? Icons.list : Icons.grid_on),
-              onPressed: () {
-                setState(() {
-                  isGridView = !isGridView;
-                });
-              },
-            ),
-          ],
-        ),
-        body: BlocBuilder<PhotoBloc, PhotoState>(
-          builder: (context, state) {
-            if (state is PhotoLoading && page == 1) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is PhotoLoaded) {
-              // Wrap the list/grid view with a RefreshIndicator
-              return RefreshIndicator(
-                onRefresh: _onRefresh,
-                child: isGridView
-                    ? GridView.builder(
-                        controller: _scrollController,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
+        body: RefreshIndicator(
+          onRefresh: _onRefresh,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              SliverAppBar(
+                floating: false,
+                pinned: true,
+                expandedHeight: 200.0,
+                flexibleSpace: FlexibleSpaceBar(
+                  title: const Text('Awesome App'),
+                  background: Container(color: Colors.blue),
+                ),
+                actions: [
+                  IconButton(
+                    icon: Icon(isGridView ? Icons.list : Icons.grid_on),
+                    onPressed: () {
+                      setState(() {
+                        isGridView = !isGridView;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              BlocBuilder<PhotoBloc, PhotoState>(
+                builder: (context, state) {
+                  if (state is PhotoLoading && page == 1) {
+                    return const SliverFillRemaining(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (state is PhotoLoaded) {
+                    // Wrap the list/grid view with a RefreshIndicator
+                    return SliverPadding(
+                      padding: const EdgeInsets.all(8.0),
+                      sliver: isGridView
+                          ? SliverGrid(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
                           childAspectRatio: 0.75,
                         ),
-                        itemCount: state.photos.length,
-                        itemBuilder: (context, index) {
-                          return PhotoItem(photo: state.photos[index]);
-                        },
+                        delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                            return PhotoItem(photo: state.photos[index]);
+                          },
+                          childCount: state.photos.length,
+                        ),
                       )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        itemCount: state.photos.length,
-                        itemBuilder: (context, index) {
-                          return PhotoItem(photo: state.photos[index]);
-                        },
+                          : SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                            return PhotoItem(photo: state.photos[index]);
+                          },
+                          childCount: state.photos.length,
+                        ),
                       ),
-              );
-            } else if (state is PhotoError) {
-              return Center(child: Text('Error: ${state.message}'));
-            }
-            return Container();
-          },
-        ),
-        bottomNavigationBar: BlocBuilder<PhotoBloc, PhotoState>(
-          builder: (context, state) {
-            if (state is PhotoLoading && page > 1) {
-              return const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            return const SizedBox.shrink();
-          },
+                    );
+                  } else if (state is PhotoError) {
+                    return SliverFillRemaining(
+                      child: Center(child: Text('Error: ${state.message}')),
+                    );
+                  }
+                  return const SliverFillRemaining(child: SizedBox.shrink());
+                },
+              ),
+              BlocBuilder<PhotoBloc, PhotoState>(
+                builder: (context, state) {
+                  if (state is PhotoLoading && page > 1) {
+                    return const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    );
+                  }
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
