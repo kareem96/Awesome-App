@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+
 void main() {
   final client = InterceptorClient(http.Client(), onRetry: () {
     log('Retrying the failed network request...');
